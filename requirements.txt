@@ -1,3 +1,6 @@
 pyserial
 PySide6
 pyqtgraph
+pandas
+matplotlib
+scipy

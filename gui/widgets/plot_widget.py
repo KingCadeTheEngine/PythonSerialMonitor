@@ -45,36 +45,22 @@ class PlotWidget(QWidget):
             self.data.append(deque(maxlen=self.window_size))
         self.channels_detected.emit(self.num_lines)
 
-    @Slot(list) # Changed to accept a list of strings
-    def update_data(self, data_list):
-        """Parse comma-separated strings from a list and update plot."""
-        for data_string in data_list:
-            try:
-                values = [float(v) for v in data_string.split(',')]
+    @Slot(list, list)
+    def update_plot_data(self, x_data, y_data_arrays):
+        """Update plot with pre-processed numerical data."""
+        if not y_data_arrays:
+            return
 
-                if self.num_lines == 0: # First data packet, determine number of channels
-                    self._initialize_plot_lines(len(values))
+        num_channels = len(y_data_arrays)
+        if self.num_lines == 0 or self.num_lines != num_channels:
+            self._initialize_plot_lines(num_channels)
 
-                if len(values) != self.num_lines:
-                    print(f"Warning: Received {len(values)} values, expected {self.num_lines}. Data ignored.")
-                    continue # Skip to next data string in the list
-
-                for i in range(self.num_lines):
-                    self.data[i].append(values[i])
-
-                # Update plot only once per batch for efficiency
-                for i in range(self.num_lines):
-                    self.lines[i].setData(range(len(self.data[i])), list(self.data[i]))
-
-            except (ValueError, IndexError) as e:
-                print(f"Plot Error: Could not parse data '{data_string}'. Error: {e}")
+        for i in range(self.num_lines):
+            self.lines[i].setData(x_data, y_data_arrays[i])
 
     @Slot(int)
     def set_window_size(self, size):
-        """Update the maxlen of the data deques."""
-        if size > 0:
-            self.window_size = size
-            for i in range(self.num_lines):
-                # Create a new deque with the new size and preserve existing data
-                new_deque = deque(self.data[i], maxlen=self.window_size)
-                self.data[i] = new_deque
+        """This slot is now handled by PlotDataProcessor."""
+        # The PlotDataProcessor will handle updating its internal deques
+        # and re-emitting data with the new window size.
+        pass

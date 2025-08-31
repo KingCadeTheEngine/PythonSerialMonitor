@@ -11,6 +11,7 @@ from PySide6.QtCore import QObject, Signal, Slot, QTimer
 class SerialWorker(QObject):
     data_received = Signal(list) # Changed to emit a list of strings
     port_status = Signal(bool, str)
+    message_count_updated = Signal(int) # New signal to emit message count
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -24,6 +25,7 @@ class SerialWorker(QObject):
         self._data_buffer = []
         self._emit_timer = None
         self._line_buffer = "" # Buffer for incomplete lines
+        self.messages_received_count = 0 # Counter for messages received
 
     @Slot(str, int)
     def connect_port(self, port, baudrate):
@@ -112,6 +114,8 @@ class SerialWorker(QObject):
                         line = line.strip()
                         if line:
                             self._data_buffer.append(line)
+                            self.messages_received_count += 1 # Increment counter
+                            self.message_count_updated.emit(self.messages_received_count) # Emit updated count
                             # print(f"Worker: Read line: '{line}'") # Keep for debugging if needed
             except serial.SerialException as e:
                 self.port_status.emit(False, f"Serial Read Error: {e}")
@@ -136,5 +140,4 @@ class SerialWorker(QObject):
     def stop(self):
         """Stop the worker thread gracefully."""
         self._is_active = False
-        if self._emit_timer and self._emit_timer.isActive():
-            self._emit_timer.stop()
+        self.disconnect_port() # Ensure all resources are released
